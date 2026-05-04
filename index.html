@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>VPlay — Video Player</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0f;
+      --surface: #111118;
+      --card: #16161f;
+      --border: #2a2a38;
+      --accent: #e8ff47;
+      --accent2: #47ffd4;
+      --text: #f0f0f8;
+      --muted: #6b6b88;
+      --danger: #ff4757;
+      --font-head: 'Syne', sans-serif;
+      --font-mono: 'DM Mono', monospace;
+    }
+
+    html, body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-head);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Grain overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 1000;
+      opacity: 0.4;
+    }
+
+    /* Glowing blobs */
+    .blob {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(120px);
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.12;
+    }
+    .blob-1 { width: 500px; height: 500px; background: var(--accent); top: -200px; left: -200px; }
+    .blob-2 { width: 400px; height: 400px; background: var(--accent2); bottom: -150px; right: -150px; }
+
+    header {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 24px 40px;
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(20px);
+    }
+
+    .logo {
+      font-size: 1.6rem;
+      font-weight: 800;
+      letter-spacing: -1px;
+    }
+    .logo span { color: var(--accent); }
+
+    .badge {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      background: var(--border);
+      color: var(--accent2);
+      padding: 4px 10px;
+      border-radius: 100px;
+      letter-spacing: 0.05em;
+    }
+
+    main {
+      position: relative;
+      z-index: 10;
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+
+    .hero-text {
+      text-align: center;
+      margin-bottom: 48px;
+      animation: fadeUp 0.7s ease both;
+    }
+
+    .hero-text h1 {
+      font-size: clamp(2rem, 6vw, 3.5rem);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -2px;
+    }
+
+    .hero-text h1 em {
+      font-style: normal;
+      color: var(--accent);
+    }
+
+    .hero-text p {
+      margin-top: 14px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      letter-spacing: 0.02em;
+    }
+
+    /* URL Input Section */
+    .input-section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px;
+      margin-bottom: 32px;
+      animation: fadeUp 0.7s 0.1s ease both;
+    }
+
+    .input-label {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--accent);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      display: block;
+    }
+
+    .url-row {
+      display: flex;
+      gap: 10px;
+      align-items: stretch;
+    }
+
+    .url-input {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 0.88rem;
+      padding: 14px 18px;
+      border-radius: 12px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .url-input::placeholder { color: var(--muted); }
+
+    .url-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(232, 255, 71, 0.08);
+    }
+
+    .play-btn {
+      background: var(--accent);
+      color: #0a0a0f;
+      border: none;
+      border-radius: 12px;
+      padding: 14px 26px;
+      font-family: var(--font-head);
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .play-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(232, 255, 71, 0.3);
+    }
+
+    .play-btn:active { transform: translateY(0); }
+
+    .play-btn svg { width: 18px; height: 18px; }
+
+    /* Format badges */
+    .format-tags {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+      flex-wrap: wrap;
+    }
+
+    .ftag {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      padding: 3px 10px;
+      border-radius: 100px;
+      letter-spacing: 0.06em;
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+    .ftag.active { border-color: var(--accent2); color: var(--accent2); }
+
+    /* Player area */
+    .player-wrapper {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+      animation: fadeUp 0.7s 0.2s ease both;
+      position: relative;
+    }
+
+    .player-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .player-title {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      background: var(--accent);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--accent);
+      animation: pulse 2s infinite;
+    }
+
+    .dot.inactive { background: var(--border); box-shadow: none; animation: none; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .player-type-tag {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      color: var(--accent2);
+      border: 1px solid var(--accent2);
+      padding: 2px 10px;
+      border-radius: 100px;
+    }
+
+    .video-container {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16/9;
+      background: #000;
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* Empty state */
+    .empty-state {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+    }
+
+    .empty-icon {
+      width: 60px;
+      height: 60px;
+      border: 2px solid var(--border);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.5;
+    }
+
+    /* Error state */
+    .error-bar {
+      display: none;
+      background: rgba(255, 71, 87, 0.1);
+      border: 1px solid rgba(255, 71, 87, 0.3);
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin: 16px 20px;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--danger);
+      align-items: center;
+      gap: 10px;
+    }
+
+    .error-bar.show { display: flex; }
+
+    /* Quick links */
+    .quick-links {
+      margin-top: 32px;
+      animation: fadeUp 0.7s 0.3s ease both;
+    }
+
+    .section-label {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+
+    .sample-links {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 12px;
+    }
+
+    .sample-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      cursor: pointer;
+      transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+    }
+
+    .sample-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 32px rgba(232, 255, 71, 0.08);
+    }
+
+    .sample-icon {
+      width: 38px;
+      height: 38px;
+      background: var(--surface);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 1.1rem;
+    }
+
+    .sample-info h4 {
+      font-size: 0.88rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .sample-info p {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      color: var(--muted);
+      line-height: 1.5;
+      word-break: break-all;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* CORS note */
+    .cors-note {
+      margin-top: 28px;
+      padding: 14px 18px;
+      background: rgba(71, 255, 212, 0.05);
+      border: 1px solid rgba(71, 255, 212, 0.15);
+      border-radius: 12px;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--muted);
+      line-height: 1.7;
+      animation: fadeUp 0.7s 0.4s ease both;
+    }
+
+    .cors-note strong { color: var(--accent2); }
+
+    @media (max-width: 600px) {
+      header { padding: 16px 20px; }
+      .url-row { flex-direction: column; }
+      .play-btn { justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+
+<header>
+  <div class="logo">V<span>Play</span></div>
+  <span class="badge">MP4 · HLS · WEBM</span>
+</header>
+
+<main>
+  <div class="hero-text">
+    <h1>যেকোনো ভিডিও<br/><em>এখানে চালাও</em></h1>
+    <p>// mp4, webm, hls (m3u8) সব সাপোর্টেড</p>
+  </div>
+
+  <div class="input-section">
+    <span class="input-label">▸ Video URL দাও</span>
+    <div class="url-row">
+      <input
+        type="text"
+        class="url-input"
+        id="videoUrl"
+        placeholder="https://example.com/video.mp4  অথবা  https://example.com/stream.m3u8"
+        autocomplete="off"
+        spellcheck="false"
+      />
+      <button class="play-btn" onclick="loadVideo()">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M8 5v14l11-7z"/>
+        </svg>
+        Play
+      </button>
+    </div>
+    <div class="format-tags">
+      <span class="ftag active" id="tag-mp4">MP4</span>
+      <span class="ftag active" id="tag-hls">HLS / M3U8</span>
+      <span class="ftag active" id="tag-webm">WEBM</span>
+      <span class="ftag active" id="tag-ogg">OGG</span>
+      <span class="ftag" id="tag-detected">— detecting format...</span>
+    </div>
+  </div>
+
+  <div class="player-wrapper">
+    <div class="player-header">
+      <div class="player-title">
+        <div class="dot inactive" id="statusDot"></div>
+        <span id="statusText">ভিডিও লোড হয়নি</span>
+      </div>
+      <span class="player-type-tag" id="typeTag" style="display:none"></span>
+    </div>
+
+    <div class="video-container">
+      <div class="empty-state" id="emptyState">
+        <div class="empty-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+          </svg>
+        </div>
+        <span>URL দিয়ে Play চাপো</span>
+      </div>
+      <video id="videoPlayer" controls style="display:none" crossorigin="anonymous"></video>
+    </div>
+
+    <div class="error-bar" id="errorBar">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+      </svg>
+      <span id="errorMsg">ভিডিও লোড করা যায়নি।</span>
+    </div>
+  </div>
+
+  <div class="quick-links">
+    <div class="section-label">// Sample Videos — ক্লিক করো</div>
+    <div class="sample-links">
+      <div class="sample-card" onclick="loadSample('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4', 'Big Buck Bunny')">
+        <div class="sample-icon">🐰</div>
+        <div class="sample-info">
+          <h4>Big Buck Bunny</h4>
+          <p>MP4 · Google CDN Sample</p>
+        </div>
+      </div>
+      <div class="sample-card" onclick="loadSample('https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', 'HLS Test Stream')">
+        <div class="sample-icon">📡</div>
+        <div class="sample-info">
+          <h4>HLS Live Test</h4>
+          <p>M3U8 · Mux HLS Demo Stream</p>
+        </div>
+      </div>
+      <div class="sample-card" onclick="loadSample('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4', 'Elephants Dream')">
+        <div class="sample-icon">🐘</div>
+        <div class="sample-info">
+          <h4>Elephants Dream</h4>
+          <p>MP4 · Open Source Film</p>
+        </div>
+      </div>
+      <div class="sample-card" onclick="loadSample('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4', 'Tears of Steel')">
+        <div class="sample-icon">🤖</div>
+        <div class="sample-info">
+          <h4>Tears of Steel</h4>
+          <p>MP4 · Blender Foundation</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cors-note">
+    <strong>⚠️ CORS নোট:</strong> কিছু সার্ভার cross-origin request block করে। সেক্ষেত্রে video load হবে না — এটা browser এর security restriction, player এর সমস্যা না। নিজের server এর video বা public CDN link ব্যবহার করলে সবচেয়ে ভালো কাজ করবে।
+  </div>
+</main>
+
+<script>
+  let hlsInstance = null;
+
+  function detectFormat(url) {
+    url = url.toLowerCase().split('?')[0];
+    if (url.endsWith('.m3u8')) return 'hls';
+    if (url.endsWith('.mp4')) return 'mp4';
+    if (url.endsWith('.webm')) return 'webm';
+    if (url.endsWith('.ogg') || url.endsWith('.ogv')) return 'ogg';
+    if (url.includes('m3u8')) return 'hls';
+    return 'mp4'; // default fallback
+  }
+
+  function setStatus(active, text) {
+    const dot = document.getElementById('statusDot');
+    const statusText = document.getElementById('statusText');
+    dot.className = 'dot' + (active ? '' : ' inactive');
+    statusText.textContent = text;
+  }
+
+  function showError(msg) {
+    const bar = document.getElementById('errorBar');
+    document.getElementById('errorMsg').textContent = msg;
+    bar.classList.add('show');
+  }
+
+  function hideError() {
+    document.getElementById('errorBar').classList.remove('show');
+  }
+
+  function loadSample(url, name) {
+    document.getElementById('videoUrl').value = url;
+    loadVideo();
+  }
+
+  function loadVideo() {
+    const url = document.getElementById('videoUrl').value.trim();
+    if (!url) {
+      alert('একটি video URL দাও!');
+      return;
+    }
+
+    hideError();
+    const video = document.getElementById('videoPlayer');
+    const emptyState = document.getElementById('emptyState');
+    const typeTag = document.getElementById('typeTag');
+    const detectedTag = document.getElementById('tag-detected');
+
+    // Destroy old HLS instance
+    if (hlsInstance) {
+      hlsInstance.destroy();
+      hlsInstance = null;
+    }
+
+    const format = detectFormat(url);
+    detectedTag.textContent = `✓ detected: ${format.toUpperCase()}`;
+    detectedTag.style.borderColor = 'var(--accent)';
+    detectedTag.style.color = 'var(--accent)';
+
+    typeTag.textContent = format.toUpperCase();
+    typeTag.style.display = 'inline';
+
+    emptyState.style.display = 'none';
+    video.style.display = 'block';
+    setStatus(false, 'লোড হচ্ছে...');
+
+    if (format === 'hls') {
+      if (Hls.isSupported()) {
+        hlsInstance = new Hls({
+          enableWorker: true,
+          lowLatencyMode: false,
+        });
+        hlsInstance.loadSource(url);
+        hlsInstance.attachMedia(video);
+        hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
+          setStatus(true, 'HLS Stream — চলছে');
+          video.play().catch(() => {});
+        });
+        hlsInstance.on(Hls.Events.ERROR, (event, data) => {
+          if (data.fatal) {
+            setStatus(false, 'HLS Error');
+            showError('HLS stream লোড করা যায়নি। URL চেক করো বা CORS block হতে পারে।');
+          }
+        });
+      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        // Safari native HLS
+        video.src = url;
+        video.addEventListener('loadedmetadata', () => {
+          setStatus(true, 'HLS — Safari Native');
+          video.play().catch(() => {});
+        });
+      } else {
+        showError('তোমার browser HLS সাপোর্ট করে না।');
+      }
+    } else {
+      video.src = url;
+      video.load();
+      video.addEventListener('loadedmetadata', onLoaded, { once: true });
+      video.addEventListener('error', onError, { once: true });
+    }
+
+    function onLoaded() {
+      setStatus(true, `${format.toUpperCase()} — চলছে`);
+      video.play().catch(() => {});
+    }
+
+    function onError() {
+      setStatus(false, 'লোড ব্যর্থ');
+      showError('ভিডিও লোড করা যায়নি। URL বা CORS policy চেক করো।');
+    }
+  }
+
+  // Enter key support
+  document.getElementById('videoUrl').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') loadVideo();
+  });
+</script>
+</body>
+</html>
