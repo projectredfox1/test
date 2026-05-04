@@ -7,508 +7,429 @@
 <link href="https://fonts.googleapis.com/css2?family=Tiro+Bangla&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0a0a0f;
-    --surface: #111118;
-    --border: #1e1e2e;
+    --bg: #060609;
+    --surface: #0e0e16;
+    --border: #1a1a28;
+    --border2: #252538;
     --accent: #e8ff47;
     --accent2: #ff4757;
+    --accent3: #4ecdc4;
     --text: #e8e8f0;
-    --muted: #555568;
-    --card-bg: #13131d;
+    --muted: #4a4a5e;
+    --card-bg: #111119;
     --success: #2ecc71;
     --warn: #f39c12;
+    --sidebar-w: 360px;
   }
-
   * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: 'Space Mono', monospace; min-height: 100vh; overflow-x: hidden; }
+  body::before { content: ''; position: fixed; inset: 0; background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px); pointer-events: none; z-index: 9000; }
 
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Space Mono', monospace;
-    min-height: 100vh;
-  }
+  /* ======= LOCK SCREEN ======= */
+  #lockScreen { position: fixed; inset: 0; background: var(--bg); z-index: 8000; display: flex; align-items: center; justify-content: center; flex-direction: column; }
+  .lock-wrap { width: 380px; border: 1px solid var(--border2); background: var(--surface); position: relative; overflow: hidden; }
+  .lock-wrap::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--accent), transparent); animation: scanLine 3s ease-in-out infinite; }
+  @keyframes scanLine { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+  .lock-header { border-bottom: 1px solid var(--border); padding: 1.5rem; display: flex; align-items: center; gap: 1rem; }
+  .lock-icon { width: 38px; height: 38px; border: 1.5px solid var(--accent); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; color: var(--accent); flex-shrink: 0; animation: lockPulse 2s ease-in-out infinite; }
+  @keyframes lockPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(232,255,71,0); } 50% { box-shadow: 0 0 0 8px rgba(232,255,71,0.07); } }
+  .lock-header-text h2 { font-family: 'Tiro Bangla', serif; font-size: 1rem; color: var(--accent); }
+  .lock-header-text p { font-size: 0.58rem; color: var(--muted); letter-spacing: 0.1em; margin-top: 0.2rem; }
+  .lock-body { padding: 1.5rem; display: flex; flex-direction: column; gap: 0.8rem; }
+  .lock-field-label { font-size: 0.58rem; color: var(--muted); letter-spacing: 0.15em; text-transform: uppercase; display: block; margin-bottom: 0.3rem; }
+  .lock-input-wrap { position: relative; }
+  .lock-input { width: 100%; background: var(--bg); border: 1px solid var(--border2); color: var(--text); font-family: 'Space Mono', monospace; font-size: 0.82rem; padding: 0.7rem 2.8rem 0.7rem 0.9rem; outline: none; letter-spacing: 0.05em; transition: border-color 0.2s; }
+  .lock-input:focus { border-color: var(--accent); }
+  .lock-input.error { border-color: var(--accent2); animation: shake 0.4s ease; }
+  .lock-input.pass-field { letter-spacing: 0.2em; }
+  @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+  .toggle-pass { position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.6rem; font-family: 'Space Mono', monospace; transition: color 0.2s; }
+  .toggle-pass:hover { color: var(--accent); }
+  .lock-error { font-size: 0.63rem; color: var(--accent2); letter-spacing: 0.08em; min-height: 0.9rem; display: block; }
+  .lock-btn { width: 100%; padding: 0.8rem; background: var(--accent); border: none; color: #000; font-family: 'Space Mono', monospace; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.2em; cursor: pointer; text-transform: uppercase; transition: background 0.2s; }
+  .lock-btn:hover { background: #d4e83d; }
+  .lock-btn:active { transform: scale(0.99); }
+  .lock-footer { border-top: 1px solid var(--border); padding: 0.8rem 1.5rem; display: flex; align-items: center; justify-content: space-between; }
+  .lock-footer span { font-size: 0.55rem; color: var(--muted); letter-spacing: 0.08em; }
+  .lock-attempts { font-size: 0.55rem; color: var(--muted); }
+  .lock-attempts.warn { color: var(--warn); }
+  .lock-attempts.danger { color: var(--accent2); }
 
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px);
-    pointer-events: none;
-    z-index: 1000;
-  }
+  /* token section in lock */
+  .lock-divider { border: none; border-top: 1px solid var(--border); margin: 0.3rem 0; }
+  .token-hint { font-size: 0.58rem; color: var(--muted); letter-spacing: 0.05em; line-height: 1.6; }
 
-  header {
-    border-bottom: 1px solid var(--border);
-    padding: 1.5rem 3rem;
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-  }
+  /* ======= MAIN APP ======= */
+  #app { display: none; }
+  .app-header { border-bottom: 1px solid var(--border); padding: 0 2rem; display: flex; align-items: center; gap: 1rem; height: 56px; position: sticky; top: 0; background: rgba(6,6,9,0.97); backdrop-filter: blur(12px); z-index: 200; }
+  .back-link { color: var(--muted); text-decoration: none; font-size: 0.65rem; letter-spacing: 0.08em; transition: color 0.2s; white-space: nowrap; }
+  .back-link:hover { color: var(--accent); }
+  .header-divider { width: 1px; height: 20px; background: var(--border2); flex-shrink: 0; }
+  .app-header h1 { font-family: 'Tiro Bangla', serif; font-size: 1rem; color: var(--accent); flex: 1; }
+  .header-badges { display: flex; align-items: center; gap: 0.5rem; }
+  .badge-pill { font-size: 0.55rem; padding: 0.2rem 0.55rem; border: 1px solid; letter-spacing: 0.12em; text-transform: uppercase; }
+  .badge-pill.admin { border-color: var(--accent2); color: var(--accent2); }
+  .badge-pill.live { border-color: var(--success); color: var(--success); }
+  .live-dot { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--success); margin-right: 3px; animation: blink 1.2s ease infinite; vertical-align: middle; }
+  .logout-btn { background: none; border: 1px solid var(--border2); color: var(--muted); font-family: 'Space Mono', monospace; font-size: 0.6rem; padding: 0.3rem 0.7rem; cursor: pointer; letter-spacing: 0.08em; transition: all 0.2s; text-transform: uppercase; }
+  .logout-btn:hover { border-color: var(--accent2); color: var(--accent2); }
 
-  .back {
-    color: var(--muted);
-    text-decoration: none;
-    font-size: 0.7rem;
-    letter-spacing: 0.1em;
-    transition: color 0.2s;
-  }
-
-  .back:hover { color: var(--accent); }
-
-  header h1 {
-    font-family: 'Tiro Bangla', serif;
-    font-size: 1.2rem;
-    color: var(--accent);
-  }
-
-  .badge {
-    font-size: 0.6rem;
-    padding: 0.2rem 0.5rem;
-    border: 1px solid var(--accent2);
-    color: var(--accent2);
-    letter-spacing: 0.1em;
-    margin-left: auto;
-  }
-
-  .layout {
-    display: grid;
-    grid-template-columns: 380px 1fr;
-    min-height: calc(100vh - 64px);
-  }
-
-  /* SIDEBAR */
-  .sidebar {
-    border-right: 1px solid var(--border);
-    padding: 2rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-  }
-
-  .section-label {
-    font-size: 0.6rem;
-    color: var(--accent);
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    margin-bottom: 0.5rem;
-    display: block;
-  }
-
-  .config-box {
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    padding: 1.2rem;
-  }
-
-  label {
-    display: block;
-    font-size: 0.65rem;
-    color: var(--muted);
-    letter-spacing: 0.1em;
-    margin-bottom: 0.4rem;
-    margin-top: 0.8rem;
-  }
-
-  label:first-of-type { margin-top: 0; }
-
-  input, textarea {
-    width: 100%;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    color: var(--text);
-    font-family: 'Space Mono', monospace;
-    font-size: 0.75rem;
-    padding: 0.6rem 0.8rem;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-
-  input:focus, textarea:focus {
-    border-color: var(--accent);
-  }
-
-  input::placeholder, textarea::placeholder {
-    color: var(--muted);
-  }
-
-  textarea { resize: vertical; min-height: 60px; }
-
-  .btn {
-    width: 100%;
-    padding: 0.75rem;
-    font-family: 'Space Mono', monospace;
-    font-size: 0.7rem;
-    letter-spacing: 0.15em;
-    cursor: pointer;
-    border: none;
-    transition: all 0.2s;
-    text-transform: uppercase;
-  }
-
-  .btn-primary {
-    background: var(--accent);
-    color: #000;
-    font-weight: 700;
-  }
-
-  .btn-primary:hover { background: #d4e83d; }
-  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
-
-  .btn-danger {
-    background: transparent;
-    color: var(--accent2);
-    border: 1px solid var(--accent2);
-  }
-
-  .btn-danger:hover { background: rgba(255,71,87,0.1); }
-
-  .divider {
-    border: none;
-    border-top: 1px solid var(--border);
-  }
-
-  /* ADD VIDEO FORM */
-  .add-form {
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    padding: 1.2rem;
-  }
-
-  .add-row {
-    display: flex;
-    gap: 0.5rem;
-    margin-top: 0.8rem;
-  }
-
-  .add-row input { flex: 1; }
-
-  .btn-add {
-    background: var(--accent);
-    color: #000;
-    border: none;
-    padding: 0 1rem;
-    font-family: 'Space Mono', monospace;
-    font-size: 0.75rem;
-    font-weight: 700;
-    cursor: pointer;
-    letter-spacing: 0.1em;
-    white-space: nowrap;
-    transition: background 0.2s;
-  }
-
-  .btn-add:hover { background: #d4e83d; }
-
-  /* TOAST */
-  .toast {
-    position: fixed;
-    bottom: 2rem;
-    right: 2rem;
-    padding: 0.8rem 1.2rem;
-    font-size: 0.7rem;
-    letter-spacing: 0.05em;
-    z-index: 9999;
-    opacity: 0;
-    transform: translateY(10px);
-    transition: all 0.3s;
-    pointer-events: none;
-  }
-
-  .toast.show {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  .toast.success { background: var(--success); color: #000; }
-  .toast.error { background: var(--accent2); color: #fff; }
-  .toast.info { background: var(--warn); color: #000; }
-
-  /* MAIN PANEL */
-  .panel {
-    padding: 2rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-  }
-
-  .panel-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .panel-title {
-    font-size: 0.7rem;
-    color: var(--muted);
-    letter-spacing: 0.1em;
-  }
-
-  .panel-actions {
-    display: flex;
-    gap: 0.8rem;
-  }
-
-  .btn-sm {
-    padding: 0.4rem 0.8rem;
-    font-family: 'Space Mono', monospace;
-    font-size: 0.65rem;
-    letter-spacing: 0.1em;
-    cursor: pointer;
-    border: 1px solid var(--border);
-    background: transparent;
-    color: var(--text);
-    transition: all 0.2s;
-    text-transform: uppercase;
-  }
-
-  .btn-sm:hover { border-color: var(--accent); color: var(--accent); }
-
-  /* VIDEO LIST */
-  .video-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .video-item {
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    padding: 0.8rem 1rem;
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    animation: fadeIn 0.3s ease;
-  }
-
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateX(-8px); }
-    to { opacity: 1; transform: translateX(0); }
-  }
-
-  .video-num {
-    font-size: 0.6rem;
-    color: var(--accent);
-    min-width: 2rem;
-  }
-
-  .video-info {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .video-title-text {
-    font-family: 'Tiro Bangla', serif;
-    font-size: 0.85rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .video-url-text {
-    font-size: 0.6rem;
-    color: var(--muted);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .item-actions {
-    display: flex;
-    gap: 0.4rem;
-  }
-
-  .btn-icon {
-    background: none;
-    border: 1px solid var(--border);
-    color: var(--muted);
-    cursor: pointer;
-    font-size: 0.65rem;
-    padding: 0.25rem 0.5rem;
-    font-family: 'Space Mono', monospace;
-    transition: all 0.2s;
-  }
-
-  .btn-icon:hover { border-color: var(--accent2); color: var(--accent2); }
-
-  .empty-state {
-    padding: 4rem;
-    text-align: center;
-    color: var(--muted);
-    font-size: 0.75rem;
-    border: 1px dashed var(--border);
-  }
-
-  /* STATUS BAR */
-  .status-bar {
-    border: 1px solid var(--border);
-    padding: 0.6rem 1rem;
-    font-size: 0.65rem;
-    color: var(--muted);
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    background: var(--card-bg);
-  }
-
-  .status-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--muted);
-    flex-shrink: 0;
-  }
-
+  .layout { display: grid; grid-template-columns: var(--sidebar-w) 1fr; min-height: calc(100vh - 56px); }
+  .sidebar { border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; position: sticky; top: 56px; height: calc(100vh - 56px); }
+  .sidebar-section { padding: 1.4rem 1.5rem; border-bottom: 1px solid var(--border); }
+  .section-label { font-size: 0.58rem; color: var(--accent); letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border2); }
+  .field-group { margin-bottom: 0.9rem; }
+  .field-group:last-child { margin-bottom: 0; }
+  .field-label { display: block; font-size: 0.58rem; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 0.35rem; }
+  input[type="text"], input[type="url"] { width: 100%; background: var(--bg); border: 1px solid var(--border2); color: var(--text); font-family: 'Space Mono', monospace; font-size: 0.72rem; padding: 0.55rem 0.8rem; outline: none; transition: border-color 0.2s; }
+  input:focus { border-color: var(--accent); }
+  input::placeholder { color: var(--muted); }
+  .config-readonly { background: var(--card-bg); border: 1px solid var(--border); color: var(--accent3); font-size: 0.72rem; padding: 0.55rem 0.8rem; font-family: 'Space Mono', monospace; display: block; width: 100%; }
+  .config-note { font-size: 0.56rem; color: var(--muted); margin-top: 0.3rem; letter-spacing: 0.05em; line-height: 1.5; }
+  .add-video-form { display: flex; flex-direction: column; gap: 0.7rem; }
+  .add-btn { width: 100%; padding: 0.65rem; background: var(--accent); border: none; color: #000; font-family: 'Space Mono', monospace; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.15em; cursor: pointer; text-transform: uppercase; transition: background 0.2s; margin-top: 0.3rem; }
+  .add-btn:hover { background: #d4e83d; }
+  .status-area { padding: 1rem 1.5rem; margin-top: auto; }
+  .status-bar { border: 1px solid var(--border2); padding: 0.65rem 0.9rem; font-size: 0.62rem; color: var(--muted); display: flex; align-items: center; gap: 0.6rem; background: var(--card-bg); letter-spacing: 0.05em; }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
   .status-dot.ok { background: var(--success); }
   .status-dot.warn { background: var(--warn); animation: blink 1s infinite; }
+  .status-dot.err { background: var(--accent2); animation: blink 0.6s infinite; }
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
+  .save-btn { width: 100%; padding: 0.75rem; background: transparent; border: 1px solid var(--accent); color: var(--accent); font-family: 'Space Mono', monospace; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.15em; cursor: pointer; text-transform: uppercase; transition: all 0.2s; margin-bottom: 0.7rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
+  .save-btn:hover { background: rgba(232,255,71,0.08); }
+  .save-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-  @keyframes blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.2; }
-  }
+  /* pending views alert */
+  .pending-alert { background: rgba(232,255,71,0.07); border: 1px solid rgba(232,255,71,0.3); padding: 0.7rem 0.9rem; font-size: 0.62rem; color: var(--accent); letter-spacing: 0.05em; margin-bottom: 0.7rem; line-height: 1.6; display: none; }
+  .pending-alert button { background: none; border: none; color: var(--accent); cursor: pointer; font-family: 'Space Mono', monospace; font-size: 0.62rem; font-weight: 700; text-decoration: underline; margin-left: 0.5rem; }
 
-  .status-text { flex: 1; }
-
-  @media (max-width: 768px) {
-    header { padding: 1rem 1.2rem; }
-    .layout { grid-template-columns: 1fr; }
-    .sidebar { border-right: none; border-bottom: 1px solid var(--border); }
-    .panel { padding: 1.2rem; }
-  }
+  .panel { padding: 1.5rem 2rem; display: flex; flex-direction: column; gap: 1.2rem; min-width: 0; }
+  .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+  .stat-card { background: var(--card-bg); border: 1px solid var(--border); padding: 1rem 1.2rem; position: relative; overflow: hidden; }
+  .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: var(--accent); transform: scaleX(0); transform-origin: left; transition: transform 0.4s ease; }
+  .stat-card:hover::before { transform: scaleX(1); }
+  .stat-label { font-size: 0.58rem; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 0.5rem; }
+  .stat-value { font-size: 1.6rem; color: var(--accent); font-weight: 700; line-height: 1; margin-bottom: 0.25rem; }
+  .stat-sub { font-size: 0.58rem; color: var(--muted); }
+  .panel-topbar { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 1rem; }
+  .panel-title { font-size: 0.65rem; color: var(--muted); letter-spacing: 0.12em; }
+  .panel-actions { display: flex; gap: 0.6rem; }
+  .btn-sm { padding: 0.35rem 0.75rem; font-family: 'Space Mono', monospace; font-size: 0.6rem; letter-spacing: 0.1em; cursor: pointer; border: 1px solid var(--border2); background: transparent; color: var(--text); transition: all 0.2s; text-transform: uppercase; }
+  .btn-sm:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-sm.danger:hover { border-color: var(--accent2); color: var(--accent2); }
+  .video-list { display: flex; flex-direction: column; gap: 0.4rem; }
+  .video-item { background: var(--card-bg); border: 1px solid var(--border); padding: 0.7rem 1rem; display: grid; grid-template-columns: 2.5rem 1fr 70px auto; align-items: center; gap: 0.8rem; transition: border-color 0.15s; animation: slideIn 0.3s ease both; }
+  @keyframes slideIn { from { opacity: 0; transform: translateX(-6px); } to { opacity: 1; transform: translateX(0); } }
+  .video-item:hover { border-color: var(--border2); }
+  .video-num { font-size: 0.58rem; color: var(--accent); letter-spacing: 0.1em; text-align: center; }
+  .video-info { min-width: 0; }
+  .video-title-text { font-family: 'Tiro Bangla', serif; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 0.15rem; }
+  .video-meta { font-size: 0.58rem; color: var(--muted); }
+  .video-views-col { display: flex; flex-direction: column; align-items: center; gap: 0.1rem; }
+  .views-number { font-size: 0.95rem; color: var(--accent3); font-weight: 700; line-height: 1; }
+  .views-label { font-size: 0.5rem; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+  .item-actions { display: flex; gap: 0.3rem; }
+  .btn-icon { background: none; border: 1px solid var(--border2); color: var(--muted); cursor: pointer; font-size: 0.6rem; padding: 0.3rem 0.55rem; font-family: 'Space Mono', monospace; transition: all 0.2s; }
+  .btn-icon:hover { border-color: var(--accent2); color: var(--accent2); }
+  .btn-icon.up:hover { border-color: var(--accent); color: var(--accent); }
+  .empty-state { padding: 4rem 2rem; text-align: center; color: var(--muted); font-size: 0.72rem; border: 1px dashed var(--border2); letter-spacing: 0.05em; line-height: 2; }
+  .toast { position: fixed; bottom: 1.5rem; right: 1.5rem; padding: 0.7rem 1.1rem; font-size: 0.68rem; letter-spacing: 0.06em; z-index: 9999; opacity: 0; transform: translateY(8px); transition: all 0.25s; pointer-events: none; border: 1px solid transparent; max-width: 300px; }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.success { background: #0f2d1a; border-color: var(--success); color: var(--success); }
+  .toast.error { background: #2d0f14; border-color: var(--accent2); color: var(--accent2); }
+  .toast.info { background: #2d200f; border-color: var(--warn); color: var(--warn); }
+  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } .sidebar { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--border); } .stats-row { grid-template-columns: repeat(2, 1fr); } .panel { padding: 1rem; } }
+  @media (max-width: 600px) { .app-header { padding: 0 1rem; } .stats-row { grid-template-columns: 1fr; } .video-item { grid-template-columns: 2rem 1fr auto; } .video-views-col { display: none; } }
 </style>
 </head>
 <body>
 
-<header>
-  <a class="back" href="index.html">← গ্যালারিতে ফিরুন</a>
-  <h1>⚙ অ্যাডমিন প্যানেল</h1>
-  <span class="badge">ADMIN ONLY</span>
-</header>
-
-<div class="layout">
-  <!-- SIDEBAR -->
-  <aside class="sidebar">
-
-    <!-- GitHub Config -->
-    <div>
-      <span class="section-label">// GitHub কনফিগ</span>
-      <div class="config-box">
-        <label>GitHub Username</label>
-        <input type="text" id="ghUser" placeholder="your-username">
-        <label>Repository Name</label>
-        <input type="text" id="ghRepo" placeholder="your-repo">
-        <label>Branch</label>
-        <input type="text" id="ghBranch" placeholder="main" value="main">
-        <label>Personal Access Token</label>
-        <input type="password" id="ghToken" placeholder="ghp_xxxxxxxxxxxx">
-        <br><br>
-        <button class="btn btn-primary" onclick="saveConfig()">কনফিগ সেভ করুন</button>
+<!-- ======= LOCK SCREEN ======= -->
+<div id="lockScreen">
+  <div class="lock-wrap">
+    <div class="lock-header">
+      <div class="lock-icon">🔐</div>
+      <div class="lock-header-text">
+        <h2>অ্যাডমিন প্যানেল</h2>
+        <p>// AUTHENTICATED ACCESS ONLY</p>
       </div>
     </div>
-
-    <hr class="divider">
-
-    <!-- Add Video -->
-    <div>
-      <span class="section-label">// নতুন ভিডিও যোগ করুন</span>
-      <div class="add-form">
-        <label>Catbox.moe URL *</label>
-        <input type="url" id="newUrl" placeholder="https://files.catbox.moe/abc123.mp4">
-        <label>শিরোনাম (ঐচ্ছিক)</label>
-        <input type="text" id="newTitle" placeholder="ভিডিওর নাম লিখুন...">
-        <div class="add-row">
-          <button class="btn-add" onclick="addVideo()">+ যোগ করুন</button>
+    <div class="lock-body">
+      <div>
+        <span class="lock-field-label">পাসওয়ার্ড</span>
+        <div class="lock-input-wrap">
+          <input type="password" class="lock-input pass-field" id="lockInput" placeholder="••••••••" autocomplete="off">
+          <button class="toggle-pass" id="togglePass" type="button">SHOW</button>
         </div>
       </div>
-    </div>
-
-    <hr class="divider">
-
-    <!-- Save to GitHub -->
-    <div>
-      <span class="section-label">// GitHub-এ পাঠান</span>
-      <button class="btn btn-primary" id="saveBtn" onclick="saveToGitHub()">
-        ↑ videos.txt আপডেট করুন
-      </button>
-      <br>
-      <div class="status-bar" id="statusBar">
-        <div class="status-dot" id="statusDot"></div>
-        <span class="status-text" id="statusText">কনফিগ দিন এবং সেভ করুন</span>
+      <hr class="lock-divider">
+      <div>
+        <span class="lock-field-label">GitHub Personal Access Token</span>
+        <div class="lock-input-wrap">
+          <input type="password" class="lock-input" id="lockToken" placeholder="ghp_xxxxxxxxxxxx" autocomplete="off">
+          <button class="toggle-pass" id="toggleToken" type="button">SHOW</button>
+        </div>
+        <span class="token-hint">Token এখানে লিখুন — কোথাও সেভ হবে না, শুধু এই session-এ ব্যবহার হবে।</span>
       </div>
+      <span class="lock-error" id="lockError"></span>
+      <button class="lock-btn" id="lockBtn" onclick="attemptUnlock()">ENTER →</button>
     </div>
+    <div class="lock-footer">
+      <span>ভিডিও গ্যালারি অ্যাডমিন v3.0</span>
+      <span class="lock-attempts" id="attemptsLabel"></span>
+    </div>
+  </div>
+</div>
 
-  </aside>
+<!-- ======= MAIN APP ======= -->
+<div id="app">
+  <header class="app-header">
+    <a class="back-link" href="index.html">← গ্যালারি</a>
+    <div class="header-divider"></div>
+    <h1>⚙ অ্যাডমিন প্যানেল</h1>
+    <div class="header-badges">
+      <span class="badge-pill live"><span class="live-dot"></span>LIVE</span>
+      <span class="badge-pill admin">ADMIN</span>
+    </div>
+    <button class="logout-btn" onclick="logout()">লগআউট</button>
+  </header>
 
-  <!-- MAIN PANEL -->
-  <main class="panel">
-    <div class="panel-header">
-      <div class="panel-title">ভিডিও তালিকা — <span id="listCount">0</span> টি</div>
-      <div class="panel-actions">
-        <button class="btn-sm" onclick="loadFromGitHub()">↓ GitHub থেকে লোড</button>
-        <button class="btn-sm" onclick="clearAll()">সব মুছুন</button>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="section-label">GitHub কনফিগ</div>
+        <div class="field-group">
+          <span class="field-label">Username</span>
+          <span class="config-readonly">projectredfox1</span>
+        </div>
+        <div class="field-group">
+          <span class="field-label">Repository</span>
+          <span class="config-readonly">test</span>
+        </div>
+        <div class="field-group">
+          <span class="field-label">Branch</span>
+          <span class="config-readonly">main</span>
+        </div>
+        <div class="field-group">
+          <span class="field-label">Token</span>
+          <span class="config-readonly" style="color: var(--success);" id="tokenStatus">✓ লগইনে দেওয়া token ব্যবহার হচ্ছে</span>
+          <p class="config-note">Token শুধু এই session-এ মেমরিতে থাকে। লগআউটে মুছে যায়।</p>
+        </div>
       </div>
-    </div>
 
-    <div class="video-list" id="videoList">
-      <div class="empty-state">
-        GitHub থেকে লোড করুন অথবা নতুন ভিডিও যোগ করুন।
+      <div class="sidebar-section">
+        <div class="section-label">নতুন ভিডিও যোগ করুন</div>
+        <div class="add-video-form">
+          <div class="field-group">
+            <span class="field-label">Catbox.moe URL *</span>
+            <input type="url" id="newUrl" placeholder="https://files.catbox.moe/abc.mp4">
+          </div>
+          <div class="field-group">
+            <span class="field-label">শিরোনাম (ঐচ্ছিক)</span>
+            <input type="text" id="newTitle" placeholder="ভিডিওর নাম লিখুন...">
+          </div>
+          <button class="add-btn" onclick="addVideo()">+ তালিকায় যোগ করুন</button>
+        </div>
       </div>
-    </div>
-  </main>
+
+      <div class="sidebar-section">
+        <div class="section-label">GitHub-এ পাঠান</div>
+        <div class="pending-alert" id="pendingAlert">
+          <span id="pendingMsg"></span>
+          <button onclick="flushAndSave()">এখনই sync করুন</button>
+        </div>
+        <button class="save-btn" id="loadBtn" onclick="loadFromGitHub()">↓ GitHub থেকে লোড করুন</button>
+        <button class="save-btn" id="saveBtn" onclick="saveToGitHub()" style="border-color: var(--success); color: var(--success);">
+          ↑ videos.txt আপডেট করুন
+        </button>
+      </div>
+
+      <div class="status-area">
+        <div class="status-bar">
+          <div class="status-dot" id="statusDot"></div>
+          <span id="statusText">প্রস্তুত</span>
+        </div>
+      </div>
+    </aside>
+
+    <main class="panel">
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-label">মোট ভিডিও</div>
+          <div class="stat-value" id="statTotal">0</div>
+          <div class="stat-sub">টি ভিডিও</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">মোট ভিউ</div>
+          <div class="stat-value" id="statViews">0</div>
+          <div class="stat-sub">সব ভিডিওর মোট</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">সর্বোচ্চ ভিউ</div>
+          <div class="stat-value" id="statTop">—</div>
+          <div class="stat-sub" id="statTopTitle">কোনো ভিডিও নেই</div>
+        </div>
+      </div>
+
+      <div class="panel-topbar">
+        <div class="panel-title">ভিডিও তালিকা — <span id="listCount">0</span> টি</div>
+        <div class="panel-actions">
+          <button class="btn-sm" onclick="sortByViews()">↓ ভিউ অনুযায়ী সাজান</button>
+          <button class="btn-sm danger" onclick="clearAll()">সব মুছুন</button>
+        </div>
+      </div>
+
+      <div class="video-list" id="videoList">
+        <div class="empty-state">GitHub থেকে লোড করুন<br>অথবা নতুন ভিডিও যোগ করুন।</div>
+      </div>
+    </main>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
+  // ======= CONFIG (no token hardcoded) =======
+  const ADMIN_PASS = 'admin@1234'; // পাসওয়ার্ড পরিবর্তন করুন
+  const GH = { user: 'projectredfox1', repo: 'test', branch: 'main' };
+  const MAX_ATTEMPTS = 5;
+  const SESSION_KEY = 'vg_admin_auth';
+  const PENDING_KEY = 'vg_pending_views';
+
+  let GH_TOKEN = ''; // set after login, never stored
   let videos = [];
+  let attempts = parseInt(localStorage.getItem('vg_attempts') || '0');
+  let locked = false;
 
-  // CONFIG
-  function saveConfig() {
-    const c = getConfig();
-    if (!c.user || !c.repo || !c.token) {
-      showToast('সব ফিল্ড পূরণ করুন!', 'error');
-      return;
+  // ======= LOCK =======
+  function checkSession() {
+    const saved = sessionStorage.getItem(SESSION_KEY);
+    if (saved) {
+      GH_TOKEN = saved; // token stored only in sessionStorage
+      showApp();
     }
-    localStorage.setItem('gh_config', JSON.stringify(c));
-    showToast('কনফিগ সেভ হয়েছে ✓', 'success');
-    setStatus('ok', 'কনফিগ সেট করা আছে');
   }
 
-  function getConfig() {
-    return {
-      user: document.getElementById('ghUser').value.trim(),
-      repo: document.getElementById('ghRepo').value.trim(),
-      branch: document.getElementById('ghBranch').value.trim() || 'main',
-      token: document.getElementById('ghToken').value.trim(),
-    };
+  function attemptUnlock() {
+    if (locked) return;
+    const pass = document.getElementById('lockInput').value;
+    const token = document.getElementById('lockToken').value.trim();
+    const errEl = document.getElementById('lockError');
+
+    if (!token) { errEl.textContent = 'GitHub Token দিন!'; return; }
+
+    if (pass === ADMIN_PASS) {
+      attempts = 0;
+      localStorage.removeItem('vg_attempts');
+      GH_TOKEN = token;
+      sessionStorage.setItem(SESSION_KEY, token); // session only, cleared on browser close
+      document.getElementById('lockScreen').style.transition = 'opacity 0.3s ease';
+      document.getElementById('lockScreen').style.opacity = '0';
+      setTimeout(showApp, 300);
+    } else {
+      attempts++;
+      localStorage.setItem('vg_attempts', attempts);
+      const inp = document.getElementById('lockInput');
+      inp.classList.add('error');
+      setTimeout(() => inp.classList.remove('error'), 500);
+      inp.value = '';
+      const remaining = MAX_ATTEMPTS - attempts;
+      const attLabel = document.getElementById('attemptsLabel');
+      if (attempts >= MAX_ATTEMPTS) {
+        locked = true;
+        errEl.textContent = 'অনেক বেশি চেষ্টা। পেজ রিলোড করুন।';
+        document.getElementById('lockBtn').disabled = true;
+        document.getElementById('lockInput').disabled = true;
+        document.getElementById('lockToken').disabled = true;
+        attLabel.textContent = 'লক হয়েছে';
+        attLabel.className = 'lock-attempts danger';
+      } else {
+        errEl.textContent = 'ভুল পাসওয়ার্ড।';
+        attLabel.textContent = remaining + ' চেষ্টা বাকি';
+        attLabel.className = 'lock-attempts ' + (remaining <= 2 ? 'danger' : 'warn');
+      }
+    }
   }
 
-  function loadConfig() {
-    try {
-      const s = localStorage.getItem('gh_config');
-      if (!s) return;
-      const c = JSON.parse(s);
-      document.getElementById('ghUser').value = c.user || '';
-      document.getElementById('ghRepo').value = c.repo || '';
-      document.getElementById('ghBranch').value = c.branch || 'main';
-      document.getElementById('ghToken').value = c.token || '';
-      if (c.user && c.repo && c.token) setStatus('ok', 'কনফিগ লোড হয়েছে');
-    } catch {}
+  function logout() {
+    sessionStorage.removeItem(SESSION_KEY);
+    GH_TOKEN = '';
+    location.reload();
   }
 
-  // STATUS
-  function setStatus(type, msg) {
-    document.getElementById('statusDot').className = 'status-dot ' + (type === 'ok' ? 'ok' : 'warn');
-    document.getElementById('statusText').textContent = msg;
+  function showApp() {
+    document.getElementById('lockScreen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    checkPendingViews();
+    renderList();
+    updateStats();
   }
 
-  // TOAST
-  function showToast(msg, type = 'info') {
-    const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.className = 'toast ' + type + ' show';
-    setTimeout(() => t.className = 'toast', 3000);
+  // toggle visibility
+  function makeToggle(btnId, inputId) {
+    document.getElementById(btnId).addEventListener('click', function() {
+      const inp = document.getElementById(inputId);
+      inp.type = inp.type === 'password' ? 'text' : 'password';
+      this.textContent = inp.type === 'password' ? 'SHOW' : 'HIDE';
+    });
+  }
+  makeToggle('togglePass', 'lockInput');
+  makeToggle('toggleToken', 'lockToken');
+
+  document.getElementById('lockInput').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('lockToken').focus(); });
+  document.getElementById('lockToken').addEventListener('keydown', e => { if (e.key === 'Enter') attemptUnlock(); });
+
+  // ======= PENDING VIEWS =======
+  function getPending() {
+    try { return JSON.parse(localStorage.getItem(PENDING_KEY) || '{}'); } catch { return {}; }
   }
 
-  // ADD VIDEO
+  function checkPendingViews() {
+    const pending = getPending();
+    const keys = Object.keys(pending);
+    if (keys.length === 0) return;
+    const total = Object.values(pending).reduce((a, b) => a + b, 0);
+    const alertEl = document.getElementById('pendingAlert');
+    document.getElementById('pendingMsg').textContent = `${keys.length} টি ভিডিওতে ${total} টি নতুন view pending (GitHub-এ save হয়নি)।`;
+    alertEl.style.display = 'block';
+  }
+
+  async function flushAndSave() {
+    await loadFromGitHub();
+    await saveToGitHub();
+  }
+
+  // Apply pending views to loaded video list
+  function applyPendingViews() {
+    const pending = getPending();
+    if (Object.keys(pending).length === 0) return;
+    videos.forEach(v => {
+      if (pending[v.url]) {
+        v.views = (v.views || 0) + pending[v.url];
+      }
+    });
+  }
+
+  function clearPending() {
+    localStorage.removeItem(PENDING_KEY);
+    document.getElementById('pendingAlert').style.display = 'none';
+  }
+
+  // ======= UTILS =======
+  function formatViews(n) {
+    if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+    if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+    return n.toString();
+  }
+
+  function extractName(url) {
+    try { return decodeURIComponent(url.split('/').pop()).replace(/\.[^.]+$/, ''); }
+    catch { return url; }
+  }
+
+  // ======= VIDEO MANAGEMENT =======
   function addVideo() {
     const url = document.getElementById('newUrl').value.trim();
     const title = document.getElementById('newTitle').value.trim();
@@ -516,22 +437,19 @@
     if (!url.includes('catbox.moe') && !url.includes('files.catbox')) {
       if (!confirm('এটি catbox.moe URL মনে হচ্ছে না। তবুও যোগ করবেন?')) return;
     }
-    videos.push({ url, title: title || extractName(url) });
+    videos.push({ url, title: title || extractName(url), views: 0 });
     document.getElementById('newUrl').value = '';
     document.getElementById('newTitle').value = '';
     renderList();
+    updateStats();
     showToast('ভিডিও যোগ হয়েছে ✓', 'success');
   }
 
-  function extractName(url) {
-    try {
-      return decodeURIComponent(url.split('/').pop()).replace(/\.[^.]+$/, '');
-    } catch { return url; }
-  }
-
   function removeVideo(i) {
+    if (!confirm('এই ভিডিওটি মুছে ফেলবেন?')) return;
     videos.splice(i, 1);
     renderList();
+    updateStats();
     showToast('ভিডিও মুছে গেছে', 'info');
   }
 
@@ -539,42 +457,74 @@
     if (!confirm('সব ভিডিও মুছে ফেলবেন?')) return;
     videos = [];
     renderList();
+    updateStats();
     showToast('সব মুছে গেছে', 'info');
   }
 
-  // RENDER
+  function moveUp(i) {
+    if (i === 0) return;
+    [videos[i-1], videos[i]] = [videos[i], videos[i-1]];
+    renderList();
+  }
+
+  function sortByViews() {
+    videos.sort((a, b) => (b.views || 0) - (a.views || 0));
+    renderList();
+    showToast('ভিউ অনুযায়ী সাজানো হয়েছে', 'info');
+  }
+
+  // ======= STATS =======
+  function updateStats() {
+    let total = 0, topV = 0, topT = '—';
+    videos.forEach(v => {
+      const vv = v.views || 0;
+      total += vv;
+      if (vv > topV) { topV = vv; topT = v.title; }
+    });
+    document.getElementById('statTotal').textContent = videos.length;
+    document.getElementById('statViews').textContent = formatViews(total);
+    document.getElementById('statTop').textContent = topV > 0 ? formatViews(topV) : '0';
+    document.getElementById('statTopTitle').textContent = topV > 0 ? topT : 'কোনো ভিউ নেই';
+    document.getElementById('listCount').textContent = videos.length;
+  }
+
+  // ======= RENDER =======
   function renderList() {
     const list = document.getElementById('videoList');
     document.getElementById('listCount').textContent = videos.length;
-
     if (!videos.length) {
-      list.innerHTML = '<div class="empty-state">কোনো ভিডিও নেই। নতুন যোগ করুন।</div>';
+      list.innerHTML = '<div class="empty-state">কোনো ভিডিও নেই।<br>নতুন ভিডিও যোগ করুন অথবা GitHub থেকে লোড করুন।</div>';
       return;
     }
-
     list.innerHTML = '';
     videos.forEach((v, i) => {
       const el = document.createElement('div');
       el.className = 'video-item';
+      el.style.animationDelay = (i * 0.04) + 's';
       el.innerHTML = `
         <div class="video-num">#${String(i+1).padStart(3,'0')}</div>
         <div class="video-info">
           <div class="video-title-text">${v.title}</div>
-          <div class="video-url-text">${v.url}</div>
+          <div class="video-meta">${v.url.split('/').pop()}</div>
+        </div>
+        <div class="video-views-col">
+          <div class="views-number">${formatViews(v.views || 0)}</div>
+          <div class="views-label">VIEWS</div>
         </div>
         <div class="item-actions">
-          <button class="btn-icon" onclick="removeVideo(${i})">✕ মুছুন</button>
+          <button class="btn-icon up" onclick="moveUp(${i})" title="উপরে সরান">↑</button>
+          <button class="btn-icon" onclick="removeVideo(${i})">✕</button>
         </div>
       `;
       list.appendChild(el);
     });
   }
 
-  // SERIALIZE
+  // ======= SERIALIZE (URL|title|views) =======
   function serializeVideos() {
-    const lines = ['# ভিডিও গ্যালারি — videos.txt', '# ফরম্যাট: URL|শিরোনাম', ''];
+    const lines = ['# ভিডিও গ্যালারি — videos.txt', '# ফরম্যাট: URL|শিরোনাম|views', ''];
     videos.forEach(v => {
-      lines.push(v.url + (v.title ? '|' + v.title : ''));
+      lines.push(`${v.url}|${v.title}|${v.views || 0}`);
     });
     return lines.join('\n');
   }
@@ -584,125 +534,99 @@
       .map(l => l.trim())
       .filter(l => l && !l.startsWith('#'))
       .map(l => {
-        const [url, ...rest] = l.split('|');
-        return { url: url.trim(), title: rest.join('|').trim() || extractName(url.trim()) };
+        const parts = l.split('|');
+        const url = parts[0].trim();
+        const title = parts[1] ? parts[1].trim() : extractName(url);
+        const views = parts[2] ? parseInt(parts[2].trim()) || 0 : 0;
+        return { url, title, views };
       });
   }
 
-  // GITHUB API
-  async function getFileSha(config) {
-    const url = `https://api.github.com/repos/${config.user}/${config.repo}/contents/videos.txt?ref=${config.branch}`;
-    const res = await fetch(url, {
-      headers: {
-        Authorization: 'Bearer ' + config.token,
-        Accept: 'application/vnd.github+json'
-      }
-    });
+  // ======= GITHUB API =======
+  function setStatus(type, msg) {
+    document.getElementById('statusDot').className = 'status-dot ' + type;
+    document.getElementById('statusText').textContent = msg;
+  }
+
+  async function getFileSha() {
+    const url = `https://api.github.com/repos/${GH.user}/${GH.repo}/contents/videos.txt?ref=${GH.branch}`;
+    const res = await fetch(url, { headers: { Authorization: 'Bearer ' + GH_TOKEN, Accept: 'application/vnd.github+json' } });
     if (res.status === 404) return null;
     if (!res.ok) throw new Error('GitHub API Error: ' + res.status);
-    const data = await res.json();
-    return data.sha;
+    return (await res.json()).sha;
   }
 
   async function loadFromGitHub() {
-    const config = getConfig();
-    if (!config.user || !config.repo || !config.token) {
-      showToast('আগে কনফিগ দিন এবং সেভ করুন!', 'error');
-      return;
-    }
-
-    setStatus('warn', 'লোড হচ্ছে...');
+    const btn = document.getElementById('loadBtn');
+    btn.disabled = true; btn.textContent = 'লোড হচ্ছে...';
+    setStatus('warn', 'GitHub থেকে লোড হচ্ছে...');
     try {
-      const url = `https://api.github.com/repos/${config.user}/${config.repo}/contents/videos.txt?ref=${config.branch}`;
-      const res = await fetch(url, {
-        headers: {
-          Authorization: 'Bearer ' + config.token,
-          Accept: 'application/vnd.github+json'
-        }
-      });
-
+      const url = `https://api.github.com/repos/${GH.user}/${GH.repo}/contents/videos.txt?ref=${GH.branch}`;
+      const res = await fetch(url, { headers: { Authorization: 'Bearer ' + GH_TOKEN, Accept: 'application/vnd.github+json' } });
       if (res.status === 404) {
-        setStatus('ok', 'videos.txt এখনো নেই — নতুন তৈরি হবে');
-        showToast('videos.txt পাওয়া যায়নি। নতুন তৈরি হবে।', 'info');
+        setStatus('ok', 'videos.txt নেই — নতুন তৈরি হবে');
+        showToast('videos.txt পাওয়া যায়নি।', 'info');
         return;
       }
-
       if (!res.ok) throw new Error('HTTP ' + res.status);
-
       const data = await res.json();
       const text = atob(data.content.replace(/\n/g, ''));
       videos = parseVideos(text);
+      applyPendingViews(); // merge pending views from visitors
       renderList();
-      setStatus('ok', 'GitHub থেকে লোড সম্পন্ন ✓');
+      updateStats();
+      setStatus('ok', 'লোড সম্পন্ন ✓');
       showToast(videos.length + ' টি ভিডিও লোড হয়েছে ✓', 'success');
     } catch (e) {
-      setStatus('warn', 'লোড ব্যর্থ: ' + e.message);
+      setStatus('err', 'লোড ব্যর্থ: ' + e.message);
       showToast('লোড ব্যর্থ: ' + e.message, 'error');
+    } finally {
+      btn.disabled = false; btn.textContent = '↓ GitHub থেকে লোড করুন';
     }
   }
 
   async function saveToGitHub() {
-    const config = getConfig();
-    if (!config.user || !config.repo || !config.token) {
-      showToast('আগে কনফিগ দিন এবং সেভ করুন!', 'error');
-      return;
-    }
-
     const btn = document.getElementById('saveBtn');
-    btn.disabled = true;
-    btn.textContent = 'আপলোড হচ্ছে...';
+    btn.disabled = true; btn.textContent = 'আপলোড হচ্ছে...';
     setStatus('warn', 'GitHub-এ পাঠানো হচ্ছে...');
-
     try {
-      const sha = await getFileSha(config);
+      const sha = await getFileSha();
       const content = btoa(unescape(encodeURIComponent(serializeVideos())));
-
       const body = {
-        message: `ভিডিও তালিকা আপডেট — ${new Date().toLocaleString('bn-BD')}`,
-        content,
-        branch: config.branch
+        message: `ভিডিও তালিকা ও ভিউ আপডেট — ${new Date().toLocaleString('bn-BD')}`,
+        content, branch: GH.branch
       };
-
       if (sha) body.sha = sha;
-
-      const url = `https://api.github.com/repos/${config.user}/${config.repo}/contents/videos.txt`;
+      const url = `https://api.github.com/repos/${GH.user}/${GH.repo}/contents/videos.txt`;
       const res = await fetch(url, {
         method: 'PUT',
-        headers: {
-          Authorization: 'Bearer ' + config.token,
-          Accept: 'application/vnd.github+json',
-          'Content-Type': 'application/json'
-        },
+        headers: { Authorization: 'Bearer ' + GH_TOKEN, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || 'HTTP ' + res.status);
-      }
-
+      if (!res.ok) { const err = await res.json(); throw new Error(err.message || 'HTTP ' + res.status); }
+      clearPending(); // pending views now saved to GitHub
       setStatus('ok', 'সফলভাবে আপডেট হয়েছে ✓');
       showToast('videos.txt GitHub-এ সেভ হয়েছে ✓', 'success');
     } catch (e) {
-      setStatus('warn', 'সেভ ব্যর্থ: ' + e.message);
+      setStatus('err', 'সেভ ব্যর্থ: ' + e.message);
       showToast('সেভ ব্যর্থ: ' + e.message, 'error');
     } finally {
-      btn.disabled = false;
-      btn.textContent = '↑ videos.txt আপডেট করুন';
+      btn.disabled = false; btn.textContent = '↑ videos.txt আপডেট করুন';
     }
   }
 
-  // Enter to add
-  document.getElementById('newTitle').addEventListener('keydown', e => {
-    if (e.key === 'Enter') addVideo();
-  });
-  document.getElementById('newUrl').addEventListener('keydown', e => {
-    if (e.key === 'Enter') document.getElementById('newTitle').focus();
-  });
+  // ======= TOAST =======
+  function showToast(msg, type = 'info') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast ' + type + ' show';
+    setTimeout(() => t.className = 'toast', 3200);
+  }
 
-  // Init
-  loadConfig();
-  renderList();
+  document.getElementById('newTitle').addEventListener('keydown', e => { if (e.key === 'Enter') addVideo(); });
+  document.getElementById('newUrl').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('newTitle').focus(); });
+
+  checkSession();
 </script>
 </body>
 </html>
