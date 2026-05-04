@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>অ্যাডমিন প্যানেল — ভিডিও গ্যালারি</title>
+<link href="https://fonts.googleapis.com/css2?family=Tiro+Bangla&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --border: #1e1e2e;
+    --accent: #e8ff47;
+    --accent2: #ff4757;
+    --text: #e8e8f0;
+    --muted: #555568;
+    --card-bg: #13131d;
+    --success: #2ecc71;
+    --warn: #f39c12;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    min-height: 100vh;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px);
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 1.5rem 3rem;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .back {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    transition: color 0.2s;
+  }
+
+  .back:hover { color: var(--accent); }
+
+  header h1 {
+    font-family: 'Tiro Bangla', serif;
+    font-size: 1.2rem;
+    color: var(--accent);
+  }
+
+  .badge {
+    font-size: 0.6rem;
+    padding: 0.2rem 0.5rem;
+    border: 1px solid var(--accent2);
+    color: var(--accent2);
+    letter-spacing: 0.1em;
+    margin-left: auto;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    min-height: calc(100vh - 64px);
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    border-right: 1px solid var(--border);
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .section-label {
+    font-size: 0.6rem;
+    color: var(--accent);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+
+  .config-box {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    padding: 1.2rem;
+  }
+
+  label {
+    display: block;
+    font-size: 0.65rem;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    margin-bottom: 0.4rem;
+    margin-top: 0.8rem;
+  }
+
+  label:first-of-type { margin-top: 0; }
+
+  input, textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    padding: 0.6rem 0.8rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  input:focus, textarea:focus {
+    border-color: var(--accent);
+  }
+
+  input::placeholder, textarea::placeholder {
+    color: var(--muted);
+  }
+
+  textarea { resize: vertical; min-height: 60px; }
+
+  .btn {
+    width: 100%;
+    padding: 0.75rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #000;
+    font-weight: 700;
+  }
+
+  .btn-primary:hover { background: #d4e83d; }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-danger {
+    background: transparent;
+    color: var(--accent2);
+    border: 1px solid var(--accent2);
+  }
+
+  .btn-danger:hover { background: rgba(255,71,87,0.1); }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+  }
+
+  /* ADD VIDEO FORM */
+  .add-form {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    padding: 1.2rem;
+  }
+
+  .add-row {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.8rem;
+  }
+
+  .add-row input { flex: 1; }
+
+  .btn-add {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    padding: 0 1rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.1em;
+    white-space: nowrap;
+    transition: background 0.2s;
+  }
+
+  .btn-add:hover { background: #d4e83d; }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    padding: 0.8rem 1.2rem;
+    font-size: 0.7rem;
+    letter-spacing: 0.05em;
+    z-index: 9999;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s;
+    pointer-events: none;
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .toast.success { background: var(--success); color: #000; }
+  .toast.error { background: var(--accent2); color: #fff; }
+  .toast.info { background: var(--warn); color: #000; }
+
+  /* MAIN PANEL */
+  .panel {
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .panel-title {
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+  }
+
+  .panel-actions {
+    display: flex;
+    gap: 0.8rem;
+  }
+
+  .btn-sm {
+    padding: 0.4rem 0.8rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text);
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+
+  .btn-sm:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* VIDEO LIST */
+  .video-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .video-item {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    padding: 0.8rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    animation: fadeIn 0.3s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateX(-8px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .video-num {
+    font-size: 0.6rem;
+    color: var(--accent);
+    min-width: 2rem;
+  }
+
+  .video-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .video-title-text {
+    font-family: 'Tiro Bangla', serif;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .video-url-text {
+    font-size: 0.6rem;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .item-actions {
+    display: flex;
+    gap: 0.4rem;
+  }
+
+  .btn-icon {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 0.65rem;
+    padding: 0.25rem 0.5rem;
+    font-family: 'Space Mono', monospace;
+    transition: all 0.2s;
+  }
+
+  .btn-icon:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  .empty-state {
+    padding: 4rem;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.75rem;
+    border: 1px dashed var(--border);
+  }
+
+  /* STATUS BAR */
+  .status-bar {
+    border: 1px solid var(--border);
+    padding: 0.6rem 1rem;
+    font-size: 0.65rem;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: var(--card-bg);
+  }
+
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--muted);
+    flex-shrink: 0;
+  }
+
+  .status-dot.ok { background: var(--success); }
+  .status-dot.warn { background: var(--warn); animation: blink 1s infinite; }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.2; }
+  }
+
+  .status-text { flex: 1; }
+
+  @media (max-width: 768px) {
+    header { padding: 1rem 1.2rem; }
+    .layout { grid-template-columns: 1fr; }
+    .sidebar { border-right: none; border-bottom: 1px solid var(--border); }
+    .panel { padding: 1.2rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <a class="back" href="index.html">← গ্যালারিতে ফিরুন</a>
+  <h1>⚙ অ্যাডমিন প্যানেল</h1>
+  <span class="badge">ADMIN ONLY</span>
+</header>
+
+<div class="layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+
+    <!-- GitHub Config -->
+    <div>
+      <span class="section-label">// GitHub কনফিগ</span>
+      <div class="config-box">
+        <label>GitHub Username</label>
+        <input type="text" id="ghUser" placeholder="your-username">
+        <label>Repository Name</label>
+        <input type="text" id="ghRepo" placeholder="your-repo">
+        <label>Branch</label>
+        <input type="text" id="ghBranch" placeholder="main" value="main">
+        <label>Personal Access Token</label>
+        <input type="password" id="ghToken" placeholder="ghp_xxxxxxxxxxxx">
+        <br><br>
+        <button class="btn btn-primary" onclick="saveConfig()">কনফিগ সেভ করুন</button>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- Add Video -->
+    <div>
+      <span class="section-label">// নতুন ভিডিও যোগ করুন</span>
+      <div class="add-form">
+        <label>Catbox.moe URL *</label>
+        <input type="url" id="newUrl" placeholder="https://files.catbox.moe/abc123.mp4">
+        <label>শিরোনাম (ঐচ্ছিক)</label>
+        <input type="text" id="newTitle" placeholder="ভিডিওর নাম লিখুন...">
+        <div class="add-row">
+          <button class="btn-add" onclick="addVideo()">+ যোগ করুন</button>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- Save to GitHub -->
+    <div>
+      <span class="section-label">// GitHub-এ পাঠান</span>
+      <button class="btn btn-primary" id="saveBtn" onclick="saveToGitHub()">
+        ↑ videos.txt আপডেট করুন
+      </button>
+      <br>
+      <div class="status-bar" id="statusBar">
+        <div class="status-dot" id="statusDot"></div>
+        <span class="status-text" id="statusText">কনফিগ দিন এবং সেভ করুন</span>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- MAIN PANEL -->
+  <main class="panel">
+    <div class="panel-header">
+      <div class="panel-title">ভিডিও তালিকা — <span id="listCount">0</span> টি</div>
+      <div class="panel-actions">
+        <button class="btn-sm" onclick="loadFromGitHub()">↓ GitHub থেকে লোড</button>
+        <button class="btn-sm" onclick="clearAll()">সব মুছুন</button>
+      </div>
+    </div>
+
+    <div class="video-list" id="videoList">
+      <div class="empty-state">
+        GitHub থেকে লোড করুন অথবা নতুন ভিডিও যোগ করুন।
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  let videos = [];
+
+  // CONFIG
+  function saveConfig() {
+    const c = getConfig();
+    if (!c.user || !c.repo || !c.token) {
+      showToast('সব ফিল্ড পূরণ করুন!', 'error');
+      return;
+    }
+    localStorage.setItem('gh_config', JSON.stringify(c));
+    showToast('কনফিগ সেভ হয়েছে ✓', 'success');
+    setStatus('ok', 'কনফিগ সেট করা আছে');
+  }
+
+  function getConfig() {
+    return {
+      user: document.getElementById('ghUser').value.trim(),
+      repo: document.getElementById('ghRepo').value.trim(),
+      branch: document.getElementById('ghBranch').value.trim() || 'main',
+      token: document.getElementById('ghToken').value.trim(),
+    };
+  }
+
+  function loadConfig() {
+    try {
+      const s = localStorage.getItem('gh_config');
+      if (!s) return;
+      const c = JSON.parse(s);
+      document.getElementById('ghUser').value = c.user || '';
+      document.getElementById('ghRepo').value = c.repo || '';
+      document.getElementById('ghBranch').value = c.branch || 'main';
+      document.getElementById('ghToken').value = c.token || '';
+      if (c.user && c.repo && c.token) setStatus('ok', 'কনফিগ লোড হয়েছে');
+    } catch {}
+  }
+
+  // STATUS
+  function setStatus(type, msg) {
+    document.getElementById('statusDot').className = 'status-dot ' + (type === 'ok' ? 'ok' : 'warn');
+    document.getElementById('statusText').textContent = msg;
+  }
+
+  // TOAST
+  function showToast(msg, type = 'info') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast ' + type + ' show';
+    setTimeout(() => t.className = 'toast', 3000);
+  }
+
+  // ADD VIDEO
+  function addVideo() {
+    const url = document.getElementById('newUrl').value.trim();
+    const title = document.getElementById('newTitle').value.trim();
+    if (!url) { showToast('URL দিন!', 'error'); return; }
+    if (!url.includes('catbox.moe') && !url.includes('files.catbox')) {
+      if (!confirm('এটি catbox.moe URL মনে হচ্ছে না। তবুও যোগ করবেন?')) return;
+    }
+    videos.push({ url, title: title || extractName(url) });
+    document.getElementById('newUrl').value = '';
+    document.getElementById('newTitle').value = '';
+    renderList();
+    showToast('ভিডিও যোগ হয়েছে ✓', 'success');
+  }
+
+  function extractName(url) {
+    try {
+      return decodeURIComponent(url.split('/').pop()).replace(/\.[^.]+$/, '');
+    } catch { return url; }
+  }
+
+  function removeVideo(i) {
+    videos.splice(i, 1);
+    renderList();
+    showToast('ভিডিও মুছে গেছে', 'info');
+  }
+
+  function clearAll() {
+    if (!confirm('সব ভিডিও মুছে ফেলবেন?')) return;
+    videos = [];
+    renderList();
+    showToast('সব মুছে গেছে', 'info');
+  }
+
+  // RENDER
+  function renderList() {
+    const list = document.getElementById('videoList');
+    document.getElementById('listCount').textContent = videos.length;
+
+    if (!videos.length) {
+      list.innerHTML = '<div class="empty-state">কোনো ভিডিও নেই। নতুন যোগ করুন।</div>';
+      return;
+    }
+
+    list.innerHTML = '';
+    videos.forEach((v, i) => {
+      const el = document.createElement('div');
+      el.className = 'video-item';
+      el.innerHTML = `
+        <div class="video-num">#${String(i+1).padStart(3,'0')}</div>
+        <div class="video-info">
+          <div class="video-title-text">${v.title}</div>
+          <div class="video-url-text">${v.url}</div>
+        </div>
+        <div class="item-actions">
+          <button class="btn-icon" onclick="removeVideo(${i})">✕ মুছুন</button>
+        </div>
+      `;
+      list.appendChild(el);
+    });
+  }
+
+  // SERIALIZE
+  function serializeVideos() {
+    const lines = ['# ভিডিও গ্যালারি — videos.txt', '# ফরম্যাট: URL|শিরোনাম', ''];
+    videos.forEach(v => {
+      lines.push(v.url + (v.title ? '|' + v.title : ''));
+    });
+    return lines.join('\n');
+  }
+
+  function parseVideos(text) {
+    return text.split('\n')
+      .map(l => l.trim())
+      .filter(l => l && !l.startsWith('#'))
+      .map(l => {
+        const [url, ...rest] = l.split('|');
+        return { url: url.trim(), title: rest.join('|').trim() || extractName(url.trim()) };
+      });
+  }
+
+  // GITHUB API
+  async function getFileSha(config) {
+    const url = `https://api.github.com/repos/${config.user}/${config.repo}/contents/videos.txt?ref=${config.branch}`;
+    const res = await fetch(url, {
+      headers: {
+        Authorization: 'Bearer ' + config.token,
+        Accept: 'application/vnd.github+json'
+      }
+    });
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error('GitHub API Error: ' + res.status);
+    const data = await res.json();
+    return data.sha;
+  }
+
+  async function loadFromGitHub() {
+    const config = getConfig();
+    if (!config.user || !config.repo || !config.token) {
+      showToast('আগে কনফিগ দিন এবং সেভ করুন!', 'error');
+      return;
+    }
+
+    setStatus('warn', 'লোড হচ্ছে...');
+    try {
+      const url = `https://api.github.com/repos/${config.user}/${config.repo}/contents/videos.txt?ref=${config.branch}`;
+      const res = await fetch(url, {
+        headers: {
+          Authorization: 'Bearer ' + config.token,
+          Accept: 'application/vnd.github+json'
+        }
+      });
+
+      if (res.status === 404) {
+        setStatus('ok', 'videos.txt এখনো নেই — নতুন তৈরি হবে');
+        showToast('videos.txt পাওয়া যায়নি। নতুন তৈরি হবে।', 'info');
+        return;
+      }
+
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+
+      const data = await res.json();
+      const text = atob(data.content.replace(/\n/g, ''));
+      videos = parseVideos(text);
+      renderList();
+      setStatus('ok', 'GitHub থেকে লোড সম্পন্ন ✓');
+      showToast(videos.length + ' টি ভিডিও লোড হয়েছে ✓', 'success');
+    } catch (e) {
+      setStatus('warn', 'লোড ব্যর্থ: ' + e.message);
+      showToast('লোড ব্যর্থ: ' + e.message, 'error');
+    }
+  }
+
+  async function saveToGitHub() {
+    const config = getConfig();
+    if (!config.user || !config.repo || !config.token) {
+      showToast('আগে কনফিগ দিন এবং সেভ করুন!', 'error');
+      return;
+    }
+
+    const btn = document.getElementById('saveBtn');
+    btn.disabled = true;
+    btn.textContent = 'আপলোড হচ্ছে...';
+    setStatus('warn', 'GitHub-এ পাঠানো হচ্ছে...');
+
+    try {
+      const sha = await getFileSha(config);
+      const content = btoa(unescape(encodeURIComponent(serializeVideos())));
+
+      const body = {
+        message: `ভিডিও তালিকা আপডেট — ${new Date().toLocaleString('bn-BD')}`,
+        content,
+        branch: config.branch
+      };
+
+      if (sha) body.sha = sha;
+
+      const url = `https://api.github.com/repos/${config.user}/${config.repo}/contents/videos.txt`;
+      const res = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          Authorization: 'Bearer ' + config.token,
+          Accept: 'application/vnd.github+json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'HTTP ' + res.status);
+      }
+
+      setStatus('ok', 'সফলভাবে আপডেট হয়েছে ✓');
+      showToast('videos.txt GitHub-এ সেভ হয়েছে ✓', 'success');
+    } catch (e) {
+      setStatus('warn', 'সেভ ব্যর্থ: ' + e.message);
+      showToast('সেভ ব্যর্থ: ' + e.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '↑ videos.txt আপডেট করুন';
+    }
+  }
+
+  // Enter to add
+  document.getElementById('newTitle').addEventListener('keydown', e => {
+    if (e.key === 'Enter') addVideo();
+  });
+  document.getElementById('newUrl').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('newTitle').focus();
+  });
+
+  // Init
+  loadConfig();
+  renderList();
+</script>
+</body>
+</html>
